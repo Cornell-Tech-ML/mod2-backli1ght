@@ -285,3 +285,84 @@ class Tensor:
 
     # Functions
     # TODO: Implement for Task 2.3.
+    
+    @property
+    def size(self) -> int:
+        """Returns the total number of elements in the tensor."""
+        return int(operators.prod(self.shape))
+
+    @property
+    def dims(self) -> int:
+        """Returns the number of dimensions in the tensor."""
+        return len(self.shape)
+
+    # Operators
+    def __add__(self, other: TensorLike) -> Tensor:
+        return Add.apply(self, self._ensure_tensor(other))
+
+    def __sub__(self, other: TensorLike) -> Tensor:
+        return Add.apply(self, Neg.apply(self._ensure_tensor(other)))
+
+    def __mul__(self, other: TensorLike) -> Tensor:
+        return Mul.apply(self, self._ensure_tensor(other))
+
+    def __lt__(self, other: TensorLike) -> Tensor:
+        return LT.apply(self, self._ensure_tensor(other))
+
+    def __eq__(self, other: TensorLike) -> Tensor:
+        return EQ.apply(self, self._ensure_tensor(other))
+
+    def __gt__(self, other: TensorLike) -> Tensor:
+        return LT.apply(self._ensure_tensor(other), self)
+
+    def __neg__(self) -> Tensor:
+        return Neg.apply(self)
+
+    def __radd__(self, other: TensorLike) -> Tensor:
+        return self + other
+
+    def __rmul__(self, other: TensorLike) -> Tensor:
+        return self * other
+
+    # Functions
+    def sigmoid(self) -> Tensor:
+        return Sigmoid.apply(self)
+
+    def relu(self) -> Tensor:
+        return ReLU.apply(self)
+
+    def log(self) -> Tensor:
+        return Log.apply(self)
+
+    def exp(self) -> Tensor:
+        return Exp.apply(self)
+
+    def sum(self, dim: Optional[int] = None) -> Tensor:
+        return Sum.apply(self, dim)
+
+    def mean(self, dim: Optional[int] = None) -> Tensor:
+        summed = self.sum(dim=dim)
+        if dim is not None:
+            return summed / float(self.shape[dim])
+        else:
+            return summed / float(self.size)
+
+    def permute(self, *order: int) -> Tensor:
+        return Permute.apply(self, order)
+
+    def view(self, *shape: int) -> Tensor:
+        return View.apply(self, tensor(shape, backend=self.backend))
+
+    def all(self, dim: Optional[int] = None) -> Tensor:
+        return All.apply(self, dim)
+
+    def is_close(self, other: TensorLike) -> Tensor:
+        return IsClose.apply(self, self._ensure_tensor(other))
+
+    def detach(self) -> Tensor:
+        """Detach from backpropagation graph."""
+        # Assuming your storage is located inside _tensor
+        return Tensor(self._tensor, backend=self.backend)
+
+
+

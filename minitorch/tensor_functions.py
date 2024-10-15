@@ -106,6 +106,143 @@ class All(Function):
 
 
 # TODO: Implement for Task 2.3.
+class Mul(Function):
+    """Element-wise multiplication of two tensors."""
+    
+    @staticmethod
+    def forward(ctx: Context, t1: Tensor, t2: Tensor) -> Tensor:
+        """Perform element-wise multiplication of two tensors."""
+        ctx.save_for_backward(t1, t2)
+        return t1.f.mul_zip(t1, t2)
+
+    @staticmethod
+    def backward(ctx: Context, grad_output: Tensor) -> Tuple[Tensor, Tensor]:
+        t1, t2 = ctx.saved_values
+        return grad_output * t2, grad_output * t1
+
+class Sigmoid(Function):
+    @staticmethod
+    def forward(ctx: Context, t1: Tensor) -> Tensor:
+        result = t1.f.sigmoid_map(t1)
+        ctx.save_for_backward(result)
+        return result
+
+    @staticmethod
+    def backward(ctx: Context, grad_output: Tensor) -> Tensor:
+        (sigmoid,) = ctx.saved_values
+        return grad_output * sigmoid * (1 - sigmoid)
+
+class ReLU(Function):
+    @staticmethod
+    def forward(ctx: Context, t1: Tensor) -> Tensor:
+        ctx.save_for_backward(t1)
+        return t1.f.relu_map(t1)
+
+    @staticmethod
+    def backward(ctx: Context, grad_output: Tensor) -> Tensor:
+        (t1,) = ctx.saved_values
+        return grad_output * (t1 > 0)
+
+class Log(Function):
+    @staticmethod
+    def forward(ctx: Context, t1: Tensor) -> Tensor:
+        ctx.save_for_backward(t1)
+        return t1.f.log_map(t1)
+
+    @staticmethod
+    def backward(ctx: Context, grad_output: Tensor) -> Tensor:
+        (t1,) = ctx.saved_values
+        return grad_output / t1
+
+class Exp(Function):
+    @staticmethod
+    def forward(ctx: Context, t1: Tensor) -> Tensor:
+        result = t1.f.exp_map(t1)
+        ctx.save_for_backward(result)
+        return result
+
+    @staticmethod
+    def backward(ctx: Context, grad_output: Tensor) -> Tensor:
+        (exp,) = ctx.saved_values
+        return grad_output * exp
+
+class Sum(Function):
+    @staticmethod
+    def forward(ctx: Context, t1: Tensor, dim: int) -> Tensor:
+        ctx.save_for_backward(t1, dim)
+        return t1.f.sum_reduce(t1, dim)
+
+    @staticmethod
+    def backward(ctx: Context, grad_output: Tensor) -> Tensor:
+        t1, dim = ctx.saved_values
+        # Create the shape of the grad_output to match the input tensor
+        shape = list(t1.shape)
+        shape[dim] = 1  # Set the reduced dimension size to 1
+        # Reshape the grad_output so that it can be broadcasted
+        grad_output_reshaped = grad_output.view(*shape)
+        
+        # Repeat the gradient along the reduced dimension to match the input tensor's shape
+        grad_input = grad_output_reshaped * Tensor.ones(t1.shape, backend=t1.backend)
+        return grad_input
+
+class LT(Function):
+    """Element-wise less-than comparison between two tensors."""
+    
+    @staticmethod
+    def forward(ctx: Context, t1: Tensor, t2: Tensor) -> Tensor:
+        return t1.f.lt_zip(t1, t2)
+
+    @staticmethod
+    def backward(ctx: Context, grad_output: Tensor) -> Tuple[None, None]:
+        return None, None
+
+
+class EQ(Function):
+    """Element-wise equality comparison between two tensors."""
+    
+    @staticmethod
+    def forward(ctx: Context, t1: Tensor, t2: Tensor) -> Tensor:
+        return t1.f.eq_zip(t1, t2)
+
+    @staticmethod
+    def backward(ctx: Context, grad_output: Tensor) -> Tuple[None, None]:
+        return None, None
+
+
+class IsClose(Function):
+    """Element-wise comparison to check if values in two tensors are close within a given tolerance."""
+    
+    @staticmethod
+    def forward(ctx: Context, t1: Tensor, t2: Tensor, tol: float = 1e-5) -> Tensor:
+        return t1.f.isclose_zip(t1, t2, tol)
+
+    @staticmethod
+    def backward(ctx: Context, grad_output: Tensor) -> Tuple[None, None]:
+        return None, None
+
+
+class Permute(Function):
+    """Permutes the dimensions of the tensor based on the provided order."""
+    
+    @staticmethod
+    def forward(ctx: Context, t1: Tensor, order: Tuple[int, ...]) -> Tensor:
+        ctx.save_for_backward(order)
+        
+        # Create a new tensor with permuted dimensions
+        new_tensor_data = t1._tensor.permute(order)
+        return Tensor(new_tensor_data, backend=t1.backend)
+
+    @staticmethod
+    def backward(ctx: Context, grad_output: Tensor) -> Tensor:
+        (order,) = ctx.saved_values
+        
+        # Reverse the order for the backward pass
+        reverse_order = [0] * len(order)
+        for i, j in enumerate(order):
+            reverse_order[j] = i
+            
+        # Permute the gradient back to the original order
+        return grad_output._tensor.permute(reverse_order)
 
 
 class View(Function):

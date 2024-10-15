@@ -261,8 +261,27 @@ def tensor_map(
         in_shape: Shape,
         in_strides: Strides,
     ) -> None:
-        # TODO: Implement for Task 2.3.
-        raise NotImplementedError("Need to implement for Task 2.3")
+        # iterate all index of output tensor
+        out_index = [0] * len(out_shape)
+        in_index = [0] * len(in_shape)
+
+        for ordinal in range(len(out)):
+            # translate ordinal to multi-dimensional index
+            to_index(ordinal, out_shape, out_index)
+
+            # broadcast version
+            for i in range(len(in_shape)):
+                if in_shape[i] == 1:
+                    in_index[i] = 0
+                else:
+                    in_index[i] = out_index[i]
+
+            # calculate position of output tensor and input tensor
+            out_pos = index_to_position(out_index, out_strides)
+            in_pos = index_to_position(in_index, in_strides)
+
+            # apply function to input tensor and store the result in output tensor
+            out[out_pos] = fn(in_storage[in_pos])
 
     return _map
 
@@ -306,8 +325,42 @@ def tensor_zip(
         b_shape: Shape,
         b_strides: Strides,
     ) -> None:
-        # TODO: Implement for Task 2.3.
-        raise NotImplementedError("Need to implement for Task 2.3")
+        # Initialize index arrays for output tensor, a tensor, and b tensor
+        out_index = [0] * len(out_shape)
+        a_index = [0] * len(a_shape)
+        b_index = [0] * len(b_shape)
+        
+        # Iterate through all elements in the output tensor
+        for i in range(len(out)):
+            # Convert linear index to multi-dimensional index for the output tensor
+            to_index(i, out_shape, out_index)
+            
+            # Broadcast the index for tensor a
+            for j in range(len(a_shape)):
+                if a_shape[j] == 1:
+                    a_index[j] = 0  # If the dimension is 1, reuse the same value (broadcasting)
+                else:
+                    a_index[j] = out_index[j]
+                    
+            # Broadcast the index for tensor b
+            for k in range(len(b_shape)):
+                if b_shape[k] == 1:
+                    b_index[k] = 0  # If the dimension is 1, reuse the same value (broadcasting)
+                else:
+                    b_index[k] = out_index[k]
+            
+            # Compute the storage position for a and b
+            a_pos = index_to_position(a_index, a_strides)
+            b_pos = index_to_position(b_index, b_strides)
+            
+            # Get the elements from a and b, apply the function fn
+            a_value = a_storage[a_pos]
+            b_value = b_storage[b_pos]
+            out_value = fn(a_value, b_value)
+            
+            # Compute the output storage position and store the result in out
+            out_pos = index_to_position(out_index, out_strides)
+            out[out_pos] = out_value
 
     return _zip
 
@@ -337,8 +390,34 @@ def tensor_reduce(
         a_strides: Strides,
         reduce_dim: int,
     ) -> None:
-        # TODO: Implement for Task 2.3.
-        raise NotImplementedError("Need to implement for Task 2.3")
+# Initialize index arrays for output tensor and input tensor
+        out_index = [0] * len(out_shape)
+        a_index = [0] * len(a_shape)
+
+        # Iterate through each element in the output storage
+        for i in range(len(out)):
+            # Convert the linear index to the multi-dimensional index for the output tensor
+            to_index(i, out_shape, out_index)
+            
+            # Set the non-reduced dimensions in the input index based on the output index
+            for j in range(len(a_shape)):
+                if j != reduce_dim:
+                    a_index[j] = out_index[j]
+            
+            # Perform the reduction along the reduce_dim dimension
+            # Initialize the result with the first value in the reduce dimension
+            a_index[reduce_dim] = 0  # Start from the first element in reduce_dim
+            reduction_result = a_storage[index_to_position(a_index, a_strides)]
+            
+            # Iterate over the rest of the elements in the reduce_dim and accumulate
+            for k in range(1, a_shape[reduce_dim]):
+                a_index[reduce_dim] = k
+                current_value = a_storage[index_to_position(a_index, a_strides)]
+                reduction_result = fn(reduction_result, current_value)
+            
+            # Store the reduced value in the output storage
+            out_pos = index_to_position(out_index, out_strides)
+            out[out_pos] = reduction_result
 
     return _reduce
 
