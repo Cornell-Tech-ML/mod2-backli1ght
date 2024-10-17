@@ -3,12 +3,9 @@ from __future__ import annotations
 import random
 from typing import Iterable, Optional, Sequence, Tuple, Union
 
-try:
-    import numba.cuda
 
-    CUDA_AVAILABLE = True
-except ImportError:
-    CUDA_AVAILABLE = False
+from numba import cuda
+
 import numpy as np
 import numpy.typing as npt
 from numpy import array, float64
@@ -181,8 +178,8 @@ class TensorData:
 
     def to_cuda_(self) -> None:  # pragma: no cover
         """Convert the tensor storage to a CUDA array if it is not already."""
-        if not numba.cuda.is_cuda_array(self._storage):
-            self._storage = numba.cuda.to_device(self._storage)
+        if not cuda.is_cuda_array(self._storage):
+            self._storage = cuda.to_device(self._storage)
 
     def is_contiguous(self) -> bool:
         """Check that the layout is contiguous, i.e. outer dimensions have bigger strides than inner dimensions.

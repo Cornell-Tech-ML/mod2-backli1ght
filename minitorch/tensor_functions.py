@@ -341,8 +341,9 @@ def zeros(shape: UserShape, backend: TensorBackend = SimpleBackend) -> Tensor:
         new tensor
 
     """
+    # Cast each 0 to float
     return minitorch.Tensor.make(
-        [0] * int(operators.prod(shape)), shape, backend=backend
+        [0.0] * int(operators.prod(shape)), shape, backend=backend
     )
 
 
