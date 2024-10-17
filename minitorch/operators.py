@@ -1,7 +1,7 @@
 """Collection of the core mathematical operators used throughout the code base."""
 
 import math
-from typing import Callable, List
+from typing import Callable, List, Iterable
 
 # ## Task 0.1
 #
@@ -332,25 +332,30 @@ def zipWith(
 
 
 def reduce(
-    f: Callable[[float, float], float], ls: List[float], initial: float
-) -> float:
-    """Reduce an iterable to a single value by applying a function cumulatively.
+    fn: Callable[[float, float], float], start: float
+) -> Callable[[Iterable[float]], float]:
+    r"""Higher-order reduce.
 
-    Args:
-    ----
-        f (Callable[[float, float], float]): Function to apply
-        ls (List[float]): Input list
-        initial (float): Initial value for the reduction
+    "Args":
+        fn: combine two values
+        start: start value $x_0$
 
-    Returns:
-    -------
-        float: The reduced value
-
+    "Returns":
+         Function that takes a list `ls` of elements
+         $x_1 \ldots x_n$ and computes the reduction :math:`fn(x_3, fn(x_2,
+         fn(x_1, x_0)))`
     """
-    result = initial
-    for x in ls:
-        result = f(result, x)
-    return result
+
+    def apply(ls: Iterable[float]) -> float:
+        my_list = list(ls).copy()
+
+        if len(my_list) == 0:
+            return start
+        else:
+            current_value = my_list.pop()
+            return fn(current_value, apply(my_list))
+
+    return apply
 
 
 def negList(ls: List[float]) -> List[float]:
@@ -396,19 +401,9 @@ def sum(ls: List[float]) -> float:
         float: The sum of the elements in ls
 
     """
-    return reduce(add, ls, 0.0)
+    return reduce(add, 0.0)(ls)
 
 
-def prod(ls: List[float]) -> float:
-    """Multiply a list with reduce.
-
-    Args:
-    ----
-        ls (List[float]): Input list
-
-    Returns:
-    -------
-        float: The product of the elements in ls
-
-    """
-    return reduce(mul, ls, 1.0)
+def prod(ls: Iterable[float]) -> float:
+    """Product of a list using `reduce` and `mul`."""
+    return reduce(mul, 1.0)(ls)
